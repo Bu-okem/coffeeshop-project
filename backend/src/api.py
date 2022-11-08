@@ -4,7 +4,7 @@ from sqlalchemy import exc
 import json
 from flask_cors import CORS
 
-from .database.models import db_drop_and_create_all, setup_db, Drink
+from .database.models import setup_db, Drink, db
 from .auth.auth import AuthError, requires_auth
 
 app = Flask(__name__)
@@ -29,6 +29,16 @@ CORS(app)
         or appropriate status code indicating reason for failure
 '''
 
+@app.route('/drinks')
+def get_drinks():
+    drinks = Drink.query.all()
+    dict_drinks = [drink.short() for drink in drinks]
+    print(drinks)
+    return jsonify({
+        "Success": True, 
+        "drinks": dict_drinks
+        })
+
 
 '''
 @TODO implement endpoint
@@ -38,6 +48,15 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
+
+@app.route('/drinks-detail')
+def get_drinks_detail():
+    drinks = Drink.query.all()
+    dict_drinks = [drink.long() for drink in drinks]
+    return jsonify({
+        "Success": True, 
+        "drinks": dict_drinks
+        })
 
 
 '''
@@ -49,6 +68,31 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
 '''
+
+@app.route('/drinks', methods=['POST'])
+def create_drinks():
+
+    data = request.get_json()
+    name = data['name']
+    color = data['color']
+    parts = data['parts']
+
+    #drinks = '[{"name": name, "color": color, "parts": parts}]'
+
+    drink_recipe = '"name": "{}", "color": "{}", "parts": {}'.format(name, color, parts)
+    
+    drink = '[{'+drink_recipe+'}]'
+
+    new_drink = Drink(title=name.capitalize(), recipe=str(drink))
+
+    new_drink.insert()
+    db.session.close()
+
+    # drinks = ["name": "black coffee", "color": "dark brown", "parts": 1]
+    return jsonify({
+        "Success": True, 
+        "drinks": str(drink)
+        })
 
 
 '''
@@ -63,6 +107,38 @@ CORS(app)
         or appropriate status code indicating reason for failure
 '''
 
+@app.route('/drinks/<int:id>', methods=['PATCH'])
+def edit_drinks(id):
+
+    data = request.get_json()
+
+    drink = Drink.query.filter_by(id=id).first()
+    recipe_dict = drink.long()['recipe'][0]
+
+    if "name" in data.keys():
+        recipe_dict['name'] = data['name']
+
+    if "color" in data.keys():
+        recipe_dict['color'] = data['color']
+    
+    if "parts" in data.keys():
+        recipe_dict['parts'] = data['parts']
+
+
+    recipe = '"name": "{name}", "color": "{color}", "parts": {parts}'.format(**recipe_dict)
+    
+    drink.recipe = '[{'+recipe+'}]'
+
+    drink.update()
+    db.session.close()
+
+    drink = Drink.query.filter_by(id=id).first()
+
+    return jsonify({
+        "Success": True, 
+        "drinks": drink.long()
+        })
+
 
 '''
 @TODO implement endpoint
@@ -74,6 +150,15 @@ CORS(app)
     returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
         or appropriate status code indicating reason for failure
 '''
+
+@app.route('/drinks/<int:id>', methods=['DELETE'])
+def delete_drinks(id):
+    drink = Drink.query.filter_by(id=id).first()
+    drink.delete()
+    return jsonify({
+        "Success": True, 
+        "delete": drink.id
+        })
 
 
 # Error Handling
@@ -106,6 +191,14 @@ def unprocessable(error):
 @TODO implement error handler for 404
     error handler should conform to general task above
 '''
+
+@app.errorhandler(404)
+def not_found():
+    return jsonify({
+        "success": False,
+        "error": 404,
+        "message": "resource not found" 
+    }), 404
 
 
 '''

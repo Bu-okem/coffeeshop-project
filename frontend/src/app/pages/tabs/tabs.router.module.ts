@@ -7,18 +7,24 @@ const routes: Routes = [
     path: 'tabs',
     component: TabsPage,
     children: [
-      { path: 'drink-menu', loadChildren: '../drink-menu/drink-menu.module#DrinkMenuPageModule' },
-      { path: 'user-page', loadChildren: '../user-page/user-page.module#UserPagePageModule' }, 
+      { 
+        path: 'drink-menu',
+        loadChildren: () => import('../drink-menu/drink-menu.module#DrinkMenuPageModule')then(x => x.drinkmenumodule)
+      },
+      { 
+        path: 'user-page'
+        loadChildren: () => import('../user-page/user-page.module#UserPagePageModule')then(x => x.userpagemodule)
+      }, 
       {
-        path: '',
-        redirectTo: '/tabs/drink-menu',
+        path: ''
+        redirectTo: '/tabs/drink-menu'
         pathMatch: 'full'
       }
     ]
   },
   {
-    path: '',
-    redirectTo: '/tabs/drink-menu',
+    path: ''
+    redirectTo: '/tabs/drink-menu'
     pathMatch: 'full'
   }
 ];
