@@ -9,22 +9,22 @@ const routes: Routes = [
     children: [
       { 
         path: 'drink-menu',
-        loadChildren: () => import('../drink-menu/drink-menu.module#DrinkMenuPageModule')then(x => x.drinkmenumodule)
+        loadChildren: () => import('../drink-menu/drink-menu.module').then(x => x.DrinkMenuPageModule)
       },
       { 
-        path: 'user-page'
-        loadChildren: () => import('../user-page/user-page.module#UserPagePageModule')then(x => x.userpagemodule)
+        path: 'user-page',
+        loadChildren: () => import('../user-page/user-page.module').then(x => x.UserPagePageModule)
       }, 
       {
-        path: ''
-        redirectTo: '/tabs/drink-menu'
+        path: '',
+        redirectTo: '/tabs/drink-menu',
         pathMatch: 'full'
       }
     ]
   },
   {
-    path: ''
-    redirectTo: '/tabs/drink-menu'
+    path: '',
+    redirectTo: '/tabs/drink-menu',
     pathMatch: 'full'
   }
 ];
