@@ -73,9 +73,10 @@ def get_drinks_detail():
 def create_drinks():
 
     data = request.get_json()
-    name = data['name']
-    color = data['color']
-    parts = data['parts']
+    title = data['title']
+    name = data['recipe']['name']
+    color = data['recipe']['color']
+    parts = data['recipe']['parts']
 
     #drinks = '[{"name": name, "color": color, "parts": parts}]'
 
@@ -83,7 +84,7 @@ def create_drinks():
     
     drink = '[{'+drink_recipe+'}]'
 
-    new_drink = Drink(title=name.capitalize(), recipe=str(drink))
+    new_drink = Drink(title=title, recipe=str(drink))
 
     new_drink.insert()
     db.session.close()
@@ -115,6 +116,9 @@ def edit_drinks(id):
     drink = Drink.query.filter_by(id=id).first()
     recipe_dict = drink.long()['recipe'][0]
 
+    if "title" in data.keys():
+        drink.title = data['title']
+    
     if "name" in data.keys():
         recipe_dict['name'] = data['name']
 
@@ -127,7 +131,7 @@ def edit_drinks(id):
 
     recipe = '"name": "{name}", "color": "{color}", "parts": {parts}'.format(**recipe_dict)
     
-    drink.recipe = '[{'+recipe+'}]'
+    drink.recipe = '[{'+recipe+'}]' 
 
     drink.update()
     db.session.close()
