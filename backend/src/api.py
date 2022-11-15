@@ -50,9 +50,15 @@ def get_drinks():
 '''
 
 @app.route('/drinks-detail')
-def get_drinks_detail():
-    drinks = Drink.query.all()
-    dict_drinks = [drink.long() for drink in drinks]
+@requires_auth("get:drinks-detail")
+def get_drinks_detail(jwt):
+    try:
+        drinks = Drink.query.all()
+        dict_drinks = [drink.long() for drink in drinks]
+    except AuthError as e:
+        abort(e)
+    except:
+        abort(422)
     return jsonify({
         "Success": True, 
         "drinks": dict_drinks
@@ -70,26 +76,28 @@ def get_drinks_detail():
 '''
 
 @app.route('/drinks', methods=['POST'])
+# @requires_auth("post:drinks")
 def create_drinks():
 
     data = request.get_json()
-    title = data['title']
-    name = data['recipe']['name']
-    color = data['recipe']['color']
-    parts = data['recipe']['parts']
+    title = data.get("title")
+    recipe = data.get("recipe")
 
-    #drinks = '[{"name": name, "color": color, "parts": parts}]'
+    if isinstance(recipe, dict):
+        recipe = [recipe]
+    elif not isinstance(recipe, list):
+        abort(422)
 
-    drink_recipe = '"name": "{}", "color": "{}", "parts": {}'.format(name, color, parts)
+    # drink = '[{"name": name, "color": color, "parts": parts}]'
     
-    drink = '[{'+drink_recipe+'}]'
+    drink = json.dumps(recipe)
 
-    new_drink = Drink(title=title, recipe=str(drink))
+    new_drink = Drink(title=title, recipe=drink)
 
     new_drink.insert()
     db.session.close()
 
-    # drinks = ["name": "black coffee", "color": "dark brown", "parts": 1]
+    # drinks = [{"name": "black coffee", "color": "dark brown", "parts": 1}]
     return jsonify({
         "Success": True, 
         "drinks": str(drink)
@@ -109,11 +117,14 @@ def create_drinks():
 '''
 
 @app.route('/drinks/<int:id>', methods=['PATCH'])
+# @requires_auth("patch:drinks")
 def edit_drinks(id):
 
     data = request.get_json()
 
     drink = Drink.query.filter_by(id=id).first()
+    if not drink:
+        abort(404)
     recipe_dict = drink.long()['recipe'][0]
 
     if "title" in data.keys():
@@ -156,9 +167,16 @@ def edit_drinks(id):
 '''
 
 @app.route('/drinks/<int:id>', methods=['DELETE'])
+# @requires_auth("delete:drinks")
 def delete_drinks(id):
     drink = Drink.query.filter_by(id=id).first()
-    drink.delete()
+    if not drink:
+        abort(404)
+    try:
+        drink.delete()
+    except:
+        abort(422)
+    
     return jsonify({
         "Success": True, 
         "delete": drink.id
@@ -209,3 +227,16 @@ def not_found():
 @TODO implement error handler for AuthError
     error handler should conform to general task above
 '''
+
+@app.errorhandler(AuthError)
+def auth_error(error):
+    return (
+        jsonify(
+            {
+                "success": False,
+                "error": error.status_code,
+                **error.error,
+            }
+        ),
+        error.status_code,
+    )
